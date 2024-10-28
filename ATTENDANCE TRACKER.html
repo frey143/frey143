@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Tracker</title>
+</bread>
+<body background="isu cauyan.JPG">
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: rgb(81,121,112);
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.image-container, .form-container, .history-container {
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 20px;
+}
+
+.image-container {
+  text-align: center;
+}
+
+#capturedImage {
+  max-width: 100%;
+  height: auto;
+  transition: opacity 0.5s ease-in-out;
+  opacity: 0;
+}
+
+#capturedImage.loaded {
+  opacity: 1;
+}
+
+#attendanceForm {
+  width: 100%;
+  padding: 20px;
+  border-radius: 5px;
+  background-color: rgb(47,62,70);
+}
+
+#attendanceForm label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+#attendanceForm input[type="text"],
+#attendanceForm input[type="date"],
+#attendanceForm input[type="time"],
+#attendanceForm select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+#attendanceForm input[type="submit"] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#attendanceForm input[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+#attendanceHistory {
+  width: 100%;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+#attendanceHistory h2 {
+  margin-top: 0;
+}
+
+.history-item {
+  border-bottom: 1px solid #ccc;
+  padding: 10px 0;
+  animation: fadeIn 1s;
+  position: relative;
+}
+
+.history-item img {
+  max-width: 100px;
+  height: auto;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.history-item .timeout-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  padding: 5px 10px;
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.history-item .timeout-btn:hover {
+  background-color: #e68900;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  #attendanceForm {
+    padding: 15px;
+  }
+
+  #attendanceForm input[type="text"],
+  #attendanceForm input[type="date"],
+  #attendanceForm input[type="time"],
+  #attendanceForm select,
+  #attendanceForm input[type="submit"] {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  #attendanceForm {
+    padding: 10px;
+  }
+
+  #attendanceForm input[type="text"],
+  #attendanceForm input[type="date"],
+  #attendanceForm input[type="time"],
+  #attendanceForm select,
+  #attendanceForm input[type="submit"] {
+    padding: 6px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<img src="" alt="picture">
+  <div class="image-container">
+    <img id="capturedImage" src="#">
+    <input type="file" id="captureImageBtn" accept="image/*" capture="environment">
+  </div>
+  <div class="form-container">
+    <form id="attendanceForm" style="color: aliceblue;">
+      <label for="time">Time:</label>
+      <input type="time" id="time" name="time"><br>
+      <label for="date">Date:</label>
+      <input type="date" id="date" name="date"><br>
+      <label for="events">Event:</label>
+      <input type="text" id="events" name="events"><br>
+      <label for="status">Status:</label>
+      <select id="status" name="status">
+        <option value="present">Present</option>
+        <option value="absent">Absent</option>
+        <option value="excused">Excused</option>
+      </select><br>
+      <input type="submit" value="Confirm Attendance">
+    </form>
+  </div>
+  <div class="history-container">
+    <div id="attendanceHistory">
+      <h2>Attendance History</h2>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const captureImageBtn = document.getElementById('captureImageBtn');
+  const capturedImage = document.getElementById('capturedImage');
+  const attendanceForm = document.getElementById('attendanceForm');
+  const attendanceHistory = document.getElementById('attendanceHistory');
+  const timeInput = document.getElementById('time');
+  const dateInput = document.getElementById('date');
+
+  let historyData = loadAttendanceHistory();
+
+  captureImageBtn.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        capturedImage.src = e.target.result;
+        capturedImage.classList.add('loaded');
+      };
+      reader.readAsDataURL(file);
+
+      const now = new Date();
+      timeInput.value = now.toTimeString().substr(0, 5);
+      dateInput.value = now.toISOString().substr(0, 10);
+    }
+  });
+
+  attendanceForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const time = timeInput.value;
+    const date = dateInput.value;
+    const events = document.getElementById('events').value;
+    const status = document.getElementById('status').value;
+    const imageUrl = capturedImage.src;
+
+    const newEntry = {
+      imageUrl: imageUrl !== '#' ? imageUrl : null,
+      time: time,
+      date: date,
+      events: events,
+      status: status,
+      timeout: null
+    };
+
+    historyData.push(newEntry);
+    saveAttendanceHistory(historyData);
+    appendHistoryItem(newEntry);
+
+    attendanceForm.reset();
+    capturedImage.src = '#';
+    capturedImage.classList.remove('loaded');
+  });
+
+  function appendHistoryItem(data) {
+    const historyItem = document.createElement('div');
+    historyItem.className = 'history-item';
+
+    if (data.imageUrl) {
+      const imgElement = document.createElement('img');
+      imgElement.src = data.imageUrl;
+      imgElement.alt = 'Captured Image';
+      historyItem.appendChild(imgElement);
+    }
+
+    const attendanceInfo = document.createElement('p');
+    attendanceInfo.textContent = `Time: ${data.time}, Date: ${data.date}, Events: ${data.events}, Status: ${data.status}`;
+    historyItem.appendChild(attendanceInfo);
+
+    if (data.timeout) {
+      const timeoutInfo = document.createElement('p');
+      timeoutInfo.className = 'timeout-info';
+      timeoutInfo.textContent = `Time Out: ${data.timeout}`;
+      historyItem.appendChild(timeoutInfo);
+    } else {
+      const timeoutBtn = document.createElement('button');
+      timeoutBtn.className = 'timeout-btn';
+      timeoutBtn.textContent = 'Time Out';
+      timeoutBtn.addEventListener('click', function() {
+        const now = new Date();
+        data.timeout = now.toTimeString().substr(0, 5);
+        const timeOutInfo = document.createElement('p');
+        timeOutInfo.className = 'timeout-info';
+        timeOutInfo.textContent = `Time Out: ${data.timeout}`;
+        historyItem.appendChild(timeOutInfo);
+        timeoutBtn.style.display = 'none';
+        saveAttendanceHistory(historyData);
+      });
+      historyItem.appendChild(timeoutBtn);
+    }
+
+    attendanceHistory.appendChild(historyItem);
+  }
+
+  function saveAttendanceHistory(data) {
+    localStorage.setItem('attendanceHistory', JSON.stringify(data));
+  }
+
+  function loadAttendanceHistory() {
+    const historyData = JSON.parse(localStorage.getItem('attendanceHistory')) || [];
+    historyData.forEach(appendHistoryItem);
+    return historyData;
+  }
+});
+</script>
+</body>
+</html>
